@@ -9,6 +9,10 @@ headers = {'Accept': 'application/json'}
 
 login = requests.post(url=login_url, data=cred)
 cookies = login.cookies
+
+lab_path = '/api/labs/test/testlabtwo.unl/open'
+requests.get(f'http://172.24.255.170{lab_path}', cookies=cookies)
+
 print(cookies)
 
 def create_instance(total):
@@ -29,17 +33,57 @@ def create_instance(total):
         device_id = response['data']['id']
         print(f"Created Instance ID is: {device_id}")
 
+def create_network():
+    network_url = 'http://172.24.255.170/api/labs/test/testlabtwo.unl/networks'
 
-def connect_devices(*args):
-    for created_id in args:
-        print("Connecting interfaces")
-        add_int_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{created_id}/interfaces'
-        int_map = '{"0":"4"}'
-        connect_int = requests.put(url=add_int_url, data=int_map, cookies=cookies, headers=headers)
-        print(connect_int.json())
+    network_data = {"count":1,"name":"Net-vIOS_2iface_0","type":"bridge","left":669,"top":322,"visibility":1,"postfix":0}
+    # network_data = {
+    #     "type": "bridge",
+    #     "name": "temp_network",
+    #     "left": "600",
+    #     "top": "300"
+    # }
 
+    response = requests.post(
+        network_url,
+        json=network_data,
+        cookies=cookies
+    )
+
+    network_id = response.json()['data']['id']
+    print("Network ID:", network_id)
+    return network_id
+
+def connect_devices(node_id, interface_id, network_id):
+    url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{node_id}/interfaces'
+
+    data = {
+        str(interface_id): network_id
+    }
+
+    r = requests.put(url, json=data, cookies=cookies)
+    print(r.json())
+
+def hide_network(network_id):
+    hide_data = {"visibility":0}
+    hide_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/networks/{network_id}'
+    response = requests.put(url=hide_url, json=hide_data, cookies=cookies)
+######End Function Declarations######
 
 total_instance = int(input("Enter number of instances you want to create: "))
 create_instance(total_instance)
+
+network_id = create_network()
+
 instances_to_connect = (input("Enter id's of instances you want to connect: ").split(","))
-connect_devices(*instances_to_connect)
+
+if len(instances_to_connect) != 2:
+    print("Please enter exactly 2 node IDs separated by comma.")
+else:
+    node1 = int(instances_to_connect[0].strip())
+    node2 = int(instances_to_connect[1].strip())
+
+    # connect both nodes to same network
+    connect_devices(node1, 0, network_id)
+    connect_devices(node2, 0, network_id)
+    hide_network(network_id)
