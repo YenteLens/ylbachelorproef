@@ -112,9 +112,20 @@ def hide_network(network_id):
     hide_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/networks/{network_id}'
     response = requests.put(url=hide_url, json=hide_data, cookies=cookies)
 
+def start(routers, vpcs):
+    for router in routers:
+        start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{router}/start'
+        start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
+        print(start_api.json())
+    for vpc in vpcs:
+        start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{vpc}/start'
+        start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
+        print(start_api.json())
+
 ###### End of function definitions
 
 total = int(input("How many routers and VPC's should be created: "))
 
 create_router(total)
 create_vpc(total)
+start(router_ids,vpc_ids)
