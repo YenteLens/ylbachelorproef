@@ -46,8 +46,10 @@ def telnet_init(port_number):
     tn.write(b"\n")
     tn.write(b"\n")
     tn.write(b"no\n")
-    time.sleep(10)
-    tn.write(b"\n")
+
+    tn.read_until(b"Press RETURN to get started!", timeout=120)
+    tn.write(b"\r\n")
+
     print("Device is ready to use.")
     device_config(port_number)
     print("Finished uploading config")
