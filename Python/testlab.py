@@ -14,6 +14,7 @@ cookies = login.cookies
 
 def create_router(total):
     router_ids = []
+    network_ids = []
     for i in range(0, total):
         ios_data = {"template": "vios", "type": "qemu", "count": "1", "image": "vios-adventerprisek9-m.spa.159-3.m9",
                     "name": f"vIOS_{i}", "icon": "Router-2D-Gen-White-S.svg", "uuid": "", "cpulimit": "undefined",
@@ -26,11 +27,24 @@ def create_router(total):
 
         create_api = requests.post(url=create_url, data=ios_data, cookies=cookies, headers=headers)
         response = create_api.json()
-        # print(response)
         device_id = response['data']['id']
         router_ids.append(device_id)
 
         print(f"Created Instance ID is: {device_id}")
+    for i in range(total):
+        network_id = create_network()
+        print(f"Created network ID is: {network_id}")
+        network_ids.append(network_id)
+
+    for i in range(total):
+        print(len(router_ids))
+        print(len(network_ids))
+        connect_devices(router_ids[i], 0, network_ids[i])
+        if i == 0:
+            connect_devices(router_ids[i], 1, network_ids[i+2])
+        else:
+            connect_devices(router_ids[i], 1, network_ids[i-1])
+        hide_network(network_ids[i])
 
 
 
@@ -57,7 +71,7 @@ def create_network():
     )
 
     network_id = response.json()['data']['id']
-    print("Network ID:", network_id)
+    #print("Network ID:", network_id)
     return network_id
 
 def connect_devices(node_id, interface_id, network_id):
@@ -77,7 +91,7 @@ def hide_network(network_id):
 ###### End of function definitions
 
 total_routers = int(input("How many routers should be created: "))
-total_VPC = int(input("How mant VPCs should be created: "))
+total_VPC = int(input("How many VPCs should be created: "))
 
 create_router(total_routers)
 create_vpc(total_VPC)
