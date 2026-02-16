@@ -37,11 +37,11 @@ def create_router(total):
         network_ids.append(network_id)
 
     for i in range(total):
-        print(len(router_ids))
-        print(len(network_ids))
+        # print(len(router_ids))
+        # print(len(network_ids))
         connect_devices(router_ids[i], 0, network_ids[i])
         if i == 0:
-            connect_devices(router_ids[i], 1, network_ids[i+2])
+            connect_devices(router_ids[i], 1, network_ids[-1])
         else:
             connect_devices(router_ids[i], 1, network_ids[i-1])
         hide_network(network_ids[i])
