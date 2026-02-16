@@ -11,10 +11,12 @@ headers = {'Accept': 'application/json'}
 login = requests.post(url=login_url, data=cred)
 cookies = login.cookies
 
+router_ids = []
+network_ids = []
+vpc_net_ids = []
+vpc_ids = []
 
 def create_router(total):
-    router_ids = []
-    network_ids = []
     for i in range(0, total):
         ios_data = {"template": "vios", "type": "qemu", "count": "1", "image": "vios-adventerprisek9-m.spa.159-3.m9",
                     "name": f"vIOS_{i}", "icon": "Router-2D-Gen-White-S.svg", "uuid": "", "cpulimit": "undefined",
@@ -58,7 +60,18 @@ def create_vpc(total):
         create_api = requests.post(url=create_url, data=ios_data, cookies=cookies, headers=headers)
         response = create_api.json()
         device_id = response['data']['id']
+        vpc_ids.append(device_id)
         print(f"Created VPC ID is: {device_id}")
+    for i in range(total):
+        vpc_net_id = create_network()
+        print(f"Created network ID is: {vpc_net_id}")
+        vpc_net_ids.append(vpc_net_id)
+    for i in range(total):
+        # print(len(router_ids))
+        # print(len(network_ids))
+        connect_devices(vpc_ids[i], 0, vpc_net_ids[i])
+        connect_devices(router_ids[i], 2, vpc_net_ids[i])
+        hide_network(vpc_net_ids[i])
 
 def create_network():
     network_url = 'http://172.24.255.170/api/labs/test/testlabtwo.unl/networks'
@@ -73,6 +86,17 @@ def create_network():
     network_id = response.json()['data']['id']
     #print("Network ID:", network_id)
     return network_id
+
+def create_vpc_net():
+    net_url = 'http://172.24.255.170/api/labs/test/testlabtwo.unl/networks'
+    net_data = {"count":1,"name":"Net-VPCiface_0","type":"bridge","left":696,"top":482.70001220703125,"visibility":1,"postfix":0}
+    response = requests.post(
+        net_url,
+        json=net_data,
+        cookies=cookies
+    )
+    net_id = response.json()['data']['id']
+    return net_id
 
 def connect_devices(node_id, interface_id, network_id):
     url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{node_id}/interfaces'
@@ -90,8 +114,7 @@ def hide_network(network_id):
 
 ###### End of function definitions
 
-total_routers = int(input("How many routers should be created: "))
-total_VPC = int(input("How many VPCs should be created: "))
+total = int(input("How many routers and VPC's should be created: "))
 
-create_router(total_routers)
-create_vpc(total_VPC)
+create_router(total)
+create_vpc(total)
