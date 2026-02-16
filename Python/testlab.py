@@ -13,6 +13,7 @@ cookies = login.cookies
 
 
 def create_router(total):
+    router_ids = []
     for i in range(0, total):
         ios_data = {"template": "vios", "type": "qemu", "count": "1", "image": "vios-adventerprisek9-m.spa.159-3.m9",
                     "name": f"vIOS_{i}", "icon": "Router-2D-Gen-White-S.svg", "uuid": "", "cpulimit": "undefined",
@@ -27,8 +28,10 @@ def create_router(total):
         response = create_api.json()
         # print(response)
         device_id = response['data']['id']
+        router_ids.append(device_id)
+
         print(f"Created Instance ID is: {device_id}")
-        network_id = create_network()
+
 
 
 def create_vpc(total):
