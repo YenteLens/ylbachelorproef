@@ -180,6 +180,7 @@ def vpc_config(port_number, device_id):
 
 
     tn = Telnet(host='172.24.255.170', port=port_number, timeout=10)
+    tn.read_until(b'VPCS>', timeout=5)
     print("Uploading VPC config...")
     with open(f"{device}.conf", 'r') as cmd_file:
         for cmd in cmd_file.readlines():
