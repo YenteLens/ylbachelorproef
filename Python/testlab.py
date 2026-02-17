@@ -1,7 +1,6 @@
 import time
 import requests
 import json
-from pprint import pprint
 from telnetlib3 import Telnet
 
 login_url = 'http://172.24.255.170/api/auth/login'
@@ -15,6 +14,7 @@ router_ids = []
 network_ids = []
 vpc_net_ids = []
 vpc_ids = []
+device_names = []
 
 def create_router(total):
     for i in range(0, total):
@@ -32,7 +32,16 @@ def create_router(total):
         device_id = response['data']['id']
         router_ids.append(device_id)
 
+        url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes'
+        nodes = requests.get(url=url, headers=headers, cookies=cookies)
+        data = nodes.json()
+        node_dict = data['data']
+
+        node_name = node_dict[f'{device_id}']['name']
+        device_names.append(node_name)
+
         print(f"Created Instance ID is: {device_id}")
+
     for i in range(total):
         network_id = create_network()
         print(f"Created network ID is: {network_id}")
@@ -52,7 +61,7 @@ def create_router(total):
 
 def create_vpc(total):
     for i in range(0, total):
-        ios_data = {"template": "vpcs", "type": "vpcs", "count": "1", "name": "VPC",
+        ios_data = {"template": "vpcs", "type": "vpcs", "count": "1", "name": f"VPC_{i}",
                     "icon": "PC-2D-Desktop-Generic-S.svg", "config": "0", "delay": "0", "left": "614", "top": "376",
                     "postfix": 0}
         ios_data = json.dumps(ios_data)
@@ -121,6 +130,45 @@ def start(routers, vpcs):
         start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{vpc}/start'
         start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
         print(start_api.json())
+    print("Waiting for devices to start (100 seconds)")
+    time.sleep(100)
+
+def get_port(node_id):
+    url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes'
+    nodes = requests.get(url=url, headers=headers, cookies=cookies)
+    data = nodes.json()
+    node_dict = data['data']
+
+    port_details = node_dict[f'{node_id}']['url']
+    port_number = int(port_details[-5:])
+
+    return port_number
+
+def telnet_init(port_number):
+    tn = Telnet(host='172.24.255.170',port=port_number, timeout=10)
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"no\n")
+
+    tn.write(b"\r\n")
+
+def device_config(port_number, device_id):
+    url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes'
+    nodes = requests.get(url=url, headers=headers, cookies=cookies)
+    data = nodes.json()
+    node_dict = data['data']
+
+    device = node_dict[f'{device_id}']['name']
+
+
+    tn = Telnet(host='172.24.255.170', port=port_number, timeout=10)
+    print("Uploading config...")
+    with open(f"{device}.conf", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip('\r\n')
+            tn.write(cmd.encode()+  b'\r')
+            time.sleep(1)
 
 ###### End of function definitions
 
@@ -129,3 +177,9 @@ total = int(input("How many routers and VPC's should be created: "))
 create_router(total)
 create_vpc(total)
 start(router_ids,vpc_ids)
+
+for router in router_ids:
+    tn_port = get_port(router)
+    telnet_init(tn_port)
+    device_config(tn_port,router)
+print("All processes are finished")
