@@ -125,11 +125,11 @@ def start(routers, vpcs):
     for router in routers:
         start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{router}/start'
         start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
-        print(start_api.json())
+        print(f"Router {router} started.")
     for vpc in vpcs:
         start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{vpc}/start'
         start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
-        print(start_api.json())
+        print(f"VPC {vpc} started.")
     print("Waiting for devices to start (100 seconds)")
     time.sleep(100)
 
