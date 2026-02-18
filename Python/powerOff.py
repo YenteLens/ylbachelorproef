@@ -10,10 +10,10 @@ cookies = login.cookies
 
 device_ids = input("Enter device ID to power off: ").split(',')
 
-def start(device_ids):
+def stop(device_ids):
     for device_id in device_ids:
-        start_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{device_id}/stop'
-        start_api = requests.request("GET", url=start_url, headers=headers, cookies=cookies)
-        print(start_api.json())
+        stop_url = f'http://172.24.255.170/api/labs/test/testlabtwo.unl/nodes/{device_id}/stop'
+        stop_api = requests.request("GET", url=stop_url, headers=headers, cookies=cookies)
+        print(stop_api.json())
 
-start(device_ids)
+stop(device_ids)
