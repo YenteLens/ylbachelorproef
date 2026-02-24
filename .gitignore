@@ -5,3 +5,5 @@ Python/.idea/
 tesconfig.conf
 vIOS*
 VPC*
+httpstest.py
+*.crt
