@@ -57,32 +57,28 @@ iptables -t nat -A POSTROUTING -s 10.199.199.0/24 -o pnet0 -j MASQUERADE
 ### Step 6: Make iptables changes persistent
 
 ```bash
-iptables-save > /etc/iptables.rules
-nano /etc/network/if-pre-up.d/iptables
+apt install iptables-persistent netfilter-persistent -y
+
+nft add rule ip nat POSTROUTING ip saddr 10.199.199.0/24 oif "pnet0" masquerade
+
+#verify if rule was added with next command:
+nft list ruleset
 
 
-#enter this content into the file:
+#save ruleset
+nft list ruleset > /etc/nftables.conf
+systemctl enable nftables
 
-#!/bin/sh
-iptables-restore < /etc/iptables.rules
-exit 0
+#then the nftables.conf file needs to be edited to prevent some errors
+#make sure the following line does not have "oif pnet0" after the address
+nano /etc/nftables.conf
+ip saddr 10.199.199.0/24 masquerade
 
+#save
+nft -f /etc/nftables.conf
 
-#save changes then edit/create next iptables file:
-nano /etc/network/if-post-down.d/iptables
-
-#enter the following content in this file:
-
-#!/bin/sh
-iptables-save -c > /etc/iptables.rules
-if [ -f /etc/iptables.rules ]; then
-    iptables-restore < /etc/iptables.rules
-fi
-exit 0
-
-#save changes and make both files executable
-sudo chmod +x /etc/network/if-post-down.d/iptables
-sudo chmod +x /etc/network/if-pre-up.d/iptables
+#reboot and verify if your rule exists with 
+nft list ruleset
 ```
 
 ### Step 7: Create a test lab
@@ -102,5 +98,33 @@ sudo chmod +x /etc/network/if-pre-up.d/iptables
 - if this doesn't work save the VPC's config and turn it off and on again, then try to ping again.
 
 - if it works then try pinging 8.8.8.8
+
+
+
+### Troubleshooting
+
+- When adding an IP to pnet1 and restarting networking you may encounter some errors. We can prevent this by verifying that pnet1 has eth1 actually assigned to it and that they're both up
+
+```bash
+#verify eth1 exists and is up
+ip addr show eth1
+ip link set eth1 up
+
+#verify pnet1 exists
+#make sure your eve vm has a second NIC!!
+ip addr show pnet1
+
+#verify eth1 is attached to pnet1
+brctl show
+
+#verify both are up
+ip link show eth1
+ip link show pnet1
+
+#if eth1 is not attached to pnet1 run the following
+brctl addif pnet1 eth1
+ip link set eth1 up
+ip link set pnet1 up
+```
 
 
