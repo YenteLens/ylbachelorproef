@@ -99,8 +99,6 @@ nft list ruleset
 
 - if it works then try pinging 8.8.8.8
 
-
-
 ### Troubleshooting
 
 - When adding an IP to pnet1 and restarting networking you may encounter some errors. We can prevent this by verifying that pnet1 has eth1 actually assigned to it and that they're both up
@@ -126,5 +124,3 @@ brctl addif pnet1 eth1
 ip link set eth1 up
 ip link set pnet1 up
 ```
-
-
