@@ -14,7 +14,7 @@ nat (inside,outside) source static LOCAL-LAN LOCAL-LAN destination static REMOTE
 #ACL
 access-list VPN-ACL extended permit ip object-group LOCAL-LAN object REMOTE-LAN
 
-#IKEv1
+#IKEv2
 crypto ikev2 policy 10
      encryption aes-256
      integrity sha256
@@ -56,7 +56,7 @@ nat (inside,outside) source static LOCAL-LAN LOCAL-LAN destination static REMOTE
 #ACL
 access-list VPN-ACL extended permit ip object LOCAL-LAN object-group REMOTE-LAN
 
-#IKEv1
+#IKEv2
 crypto ikev2 policy 10
      encryption aes-256
      integrity sha256
