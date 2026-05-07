@@ -16,6 +16,10 @@ headers = {'Accept': 'application/json'}
 session = requests.session()
 CA_CERT_PATH = "./eveng.crt"
 
+# device_ids
+routers = []
+switches = []
+
 
 # Start function declarations
 
@@ -33,37 +37,70 @@ def login():
 def create_router():
     create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
     base_data = {"image": "vios-adventerprisek9-m.spa.159-3.m9", "name": "vIOS", "icon": "Router.png",
-            "cpulimit": 1, "cpu": 1, "ram": 1024, "ethernet": 4, "qemu_version": "2.4.0", "qemu_arch": "x86_64",
-            "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host",
-            "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 700, "top": 240, "count": 1,
-            "template": "vios", "type": "qemu", "postfix": 0}
+                 "cpulimit": 1, "cpu": 1, "ram": 1024, "ethernet": 4, "qemu_version": "2.4.0", "qemu_arch": "x86_64",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 700, "top": 240, "count": 1,
+                 "template": "vios", "type": "qemu", "postfix": 0}
 
     for i in range(3):
         data = base_data.copy()
 
-        #give the devices a unique name and location
-        data["name"] = f"R{i+1}"
+        # give the devices a unique name and location
+        data["name"] = f"R{i + 1}"
         match data["name"]:
             case "R2":
-                data["left"] = 600
+                data["left"] = 550
                 data["top"] = 400
             case "R3":
-                data["left"] = 800
+                data["left"] = 850
                 data["top"] = 400
             case _:
-                pass #does nothing
+                pass  # does nothing
 
-        #turn data into JSON
+        # turn data into JSON
         data = json.dumps(data)
-        #create the devices and store the response to extract the device_id
+        # create the devices and store the response to extract the device_id
         login()
         create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
         response = create_api.json()
 
         device_id = response['data']['id']
-        print(f"Created router: {device_id}")
+        routers.append(device_id)
+        print(f"Created router with device id: {device_id}")
+
+
+def create_switch():
+    create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
+    base_data = {"image": "viosl2-adventerprisek9-m-15.2.4055", "name": "Switch", "icon": "Switch.png", "cpulimit": 1,
+                 "cpu": 1, "ram": 1024, "ethernet": 8, "qemu_version": "2.4.0", "qemu_arch": "x86_64",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 550, "top": 240, "count": 1,
+                 "template": "viosl2", "type": "qemu", "postfix": 0}
+
+    for i in range(3):
+        data = base_data.copy()
+
+        # give the devices a unique name and location
+        data["name"] = f"SW{i + 1}"
+        match data["name"]:
+            case "SW2":
+                data["top"] = 600
+            case "SW3":
+                data["top"] = 600
+                data["left"] = 850
+
+        data = json.dumps(data)
+
+        login()
+        create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        switches.append(device_id)
+        print(f"Created switch with device id: {device_id}")
 
 # End function declarations
 
 login()
 create_router()
+create_switch()\
