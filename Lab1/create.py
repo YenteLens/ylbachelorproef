@@ -149,7 +149,7 @@ def create_cloud():
 
     device_id = response['data']['id']
     cloud[base_data["name"]] = device_id
-    print(f"Created cloud with device id: {device_id}")
+    print(f"Created cloud with network id: {device_id}")
 
 
 def create_vpc():
@@ -211,6 +211,12 @@ def hide_networks(network_id):
     hide_data = {"visibility": 0}
     hide_url = f'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks/{network_id}'
     response = session.put(url=hide_url, json=hide_data,verify=CA_CERT_PATH)
+
+def start(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes/{node_id}/start"
+    response = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
+    print(f"Device with id: {node_id} started")
+
 # End function declarations
 
 create_router()
@@ -222,7 +228,6 @@ create_vpc()
 all_devices.update(routers)
 all_devices.update(switches)
 all_devices.update(firewalls)
-all_devices.update(cloud)
 all_devices.update(vpcs)
 
 #uses the links declared at the top to connect the devices on the correct interfaces
@@ -236,3 +241,9 @@ for device1, int1, device2, int2 in links:
 #connect firewall to internet separately
 connect_interfaces(firewalls["ASA"],3,cloud["Internet"])
 
+for device in all_devices:
+    start(all_devices[device])
+
+print("Waiting 165 seconds to let all devices boot.")
+time.sleep(165)
+print("Sleep finished.")
