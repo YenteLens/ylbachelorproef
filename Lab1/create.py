@@ -217,6 +217,30 @@ def start(node_id):
     response = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
     print(f"Device with id: {node_id} started")
 
+def get_port(node_id):
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
+
+    login()
+
+    nodes = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
+
+    data = nodes.json()
+    node_dict = data['data']
+
+    port_details = node_dict[f'{node_id}']['url']
+    port_number = int(port_details[-5:])
+
+    return port_number
+
+def telnet_init(port_number):
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"no\n")
+
+    tn.write(b"\r\n")
+
 # End function declarations
 
 create_router()
@@ -247,3 +271,8 @@ for device in all_devices:
 print("Waiting 165 seconds to let all devices boot.")
 time.sleep(165)
 print("Sleep finished.")
+
+for device in all_devices:
+    tn_port = get_port(all_devices[device])
+    if device != "ASA":
+        telnet_init(tn_port)
