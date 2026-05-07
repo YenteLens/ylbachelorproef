@@ -21,6 +21,7 @@ routers = []
 switches = []
 firewalls = []
 cloud = []
+vpcs = []
 
 
 # Start function declarations
@@ -86,9 +87,9 @@ def create_switch():
         data["name"] = f"SW{i + 1}"
         match data["name"]:
             case "SW2":
-                data["top"] = 600
+                data["top"] = 550
             case "SW3":
-                data["top"] = 600
+                data["top"] = 550
                 data["left"] = 850
 
         data = json.dumps(data)
@@ -124,8 +125,8 @@ def create_firewall():
 
 def create_cloud():
     create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks'
-    base_data = {"name": "Internet", "type": "pnet1", "icon": "01-Cloud-Default.svg", "left": 850, "top": 100, "count": 1,
-                 "postfix": 0, "visibility": 1}
+    base_data = {"name": "Internet", "type": "pnet1", "icon": "01-Cloud-Default.svg", "left": 850, "top": 100,
+                 "count": 1, "postfix": 0, "visibility": 1}
     base_data = json.dumps(base_data)
 
     login()
@@ -137,15 +138,52 @@ def create_cloud():
     print(f"Created cloud with device id: {device_id}")
 
 
+def create_vpc():
+    create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
+    base_data = {"name": "VPC", "icon": "Desktop.png", "config": "0", "sat": "-1", "delay": 0, "left": 400,
+                 "top": 240, "count": 1, "template": "vpcs", "type": "vpcs", "postfix": 0}
+
+    for i in range(4):
+        data = base_data.copy()
+
+        # give the devices a unique name and location
+        data["name"] = f"VPC{i + 1}"
+        match data["name"]:
+            case "VPC1":
+                data["left"] = 550
+                data["top"] = 700
+                data["name"] = "HR"
+            case "VPC2":
+                data["left"] = 850
+                data["top"] = 700
+                data["name"] = "IT"
+            case "VPC3":
+                data["left"] = 1000
+                data["top"] = 240
+                data["name"] = "External"
+            case "VPC4":
+                data["name"] = "Reception"
+
+        data = json.dumps(data)
+
+        login()
+        create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        vpcs.append(device_id)
+        print(f"Created vpc with device id: {device_id}")
 
 # End function declarations
 
-login()
 create_router()
 create_switch()
 create_firewall()
 create_cloud()
+create_vpc()
+
 print(routers)
 print(switches)
 print(firewalls)
 print(cloud)
+print(vpcs)
