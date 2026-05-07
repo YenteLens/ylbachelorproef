@@ -19,6 +19,8 @@ CA_CERT_PATH = "./eveng.crt"
 # device_ids
 routers = []
 switches = []
+firewalls = []
+cloud = []
 
 
 # Start function declarations
@@ -99,8 +101,51 @@ def create_switch():
         switches.append(device_id)
         print(f"Created switch with device id: {device_id}")
 
+
+def create_firewall():
+    create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
+    base_data = {"image": "asav-9-20-2-22", "name": "ASA", "icon": "Firewall.png", "cpulimit": 1, "cpu": 1,
+                 "ram": 2048, "ethernet": 8, "qemu_version": "2.12.0", "qemu_arch": "x86_64",
+                 "qemu_nic": "virtio-net-pci",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -cpu host -nodefaults -display none -vga std -rtc base=utc",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 850, "top": 240, "count": 1,
+                 "template": "asav", "type": "qemu", "postfix": 0}
+
+    base_data = json.dumps(base_data)
+
+    login()
+    create_api = session.post(url=create_url, data=base_data, headers=headers, verify=CA_CERT_PATH)
+    response = create_api.json()
+
+    device_id = response['data']['id']
+    firewalls.append(device_id)
+    print(f"Created firewall with device id: {device_id}")
+
+
+def create_cloud():
+    create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks'
+    base_data = {"name": "Internet", "type": "pnet1", "icon": "01-Cloud-Default.svg", "left": 850, "top": 100, "count": 1,
+                 "postfix": 0, "visibility": 1}
+    base_data = json.dumps(base_data)
+
+    login()
+    create_api = session.post(url=create_url, data=base_data, headers=headers, verify=CA_CERT_PATH)
+    response = create_api.json()
+
+    device_id = response['data']['id']
+    cloud.append(device_id)
+    print(f"Created cloud with device id: {device_id}")
+
+
+
 # End function declarations
 
 login()
 create_router()
-create_switch()\
+create_switch()
+create_firewall()
+create_cloud()
+print(routers)
+print(switches)
+print(firewalls)
+print(cloud)
