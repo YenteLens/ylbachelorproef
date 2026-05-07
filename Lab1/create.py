@@ -17,11 +17,29 @@ session = requests.session()
 CA_CERT_PATH = "./eveng.crt"
 
 # device_ids
-routers = []
-switches = []
-firewalls = []
-cloud = []
-vpcs = []
+routers = {}
+switches = {}
+firewalls = {}
+cloud = {}
+vpcs = {}
+
+all_devices = {}
+
+
+#topology connections
+links = [
+    ("R1", 0, "R3", 1),
+    ("R1", 1, "R2", 0),
+    ("R1", 2, "SW1", 0),
+    ("R1", 3, "ASA", 1),
+    ("R2", 1, "R3", 0),
+    ("R2", 2, "SW2", 0),
+    ("R3", 2, "SW3", 0),
+    ("SW2", 1, "HR", 0),
+    ("SW3", 1, "IT", 0),
+    ("SW1", 1, "Reception", 0),
+    ("ASA", 2, "External", 0),
+]
 
 
 # Start function declarations
@@ -61,14 +79,13 @@ def create_router():
                 pass  # does nothing
 
         # turn data into JSON
-        data = json.dumps(data)
         # create the devices and store the response to extract the device_id
         login()
-        create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
+        create_api = session.post(url=create_url, json=data, headers=headers, verify=CA_CERT_PATH)
         response = create_api.json()
 
         device_id = response['data']['id']
-        routers.append(device_id)
+        routers[data["name"]] = device_id
         print(f"Created router with device id: {device_id}")
 
 
@@ -92,14 +109,13 @@ def create_switch():
                 data["top"] = 550
                 data["left"] = 850
 
-        data = json.dumps(data)
 
         login()
-        create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
+        create_api = session.post(url=create_url, json=data, headers=headers, verify=CA_CERT_PATH)
         response = create_api.json()
 
         device_id = response['data']['id']
-        switches.append(device_id)
+        switches[data["name"]] = device_id
         print(f"Created switch with device id: {device_id}")
 
 
@@ -112,14 +128,13 @@ def create_firewall():
                  "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 850, "top": 240, "count": 1,
                  "template": "asav", "type": "qemu", "postfix": 0}
 
-    base_data = json.dumps(base_data)
 
     login()
-    create_api = session.post(url=create_url, data=base_data, headers=headers, verify=CA_CERT_PATH)
+    create_api = session.post(url=create_url, json=base_data, headers=headers, verify=CA_CERT_PATH)
     response = create_api.json()
 
     device_id = response['data']['id']
-    firewalls.append(device_id)
+    firewalls[base_data["name"]] = device_id
     print(f"Created firewall with device id: {device_id}")
 
 
@@ -127,14 +142,13 @@ def create_cloud():
     create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks'
     base_data = {"name": "Internet", "type": "pnet1", "icon": "01-Cloud-Default.svg", "left": 850, "top": 100,
                  "count": 1, "postfix": 0, "visibility": 1}
-    base_data = json.dumps(base_data)
 
     login()
-    create_api = session.post(url=create_url, data=base_data, headers=headers, verify=CA_CERT_PATH)
+    create_api = session.post(url=create_url, json=base_data, headers=headers, verify=CA_CERT_PATH)
     response = create_api.json()
 
     device_id = response['data']['id']
-    cloud.append(device_id)
+    cloud[base_data["name"]] = device_id
     print(f"Created cloud with device id: {device_id}")
 
 
@@ -164,16 +178,39 @@ def create_vpc():
             case "VPC4":
                 data["name"] = "Reception"
 
-        data = json.dumps(data)
 
         login()
-        create_api = session.post(url=create_url, data=data, headers=headers, verify=CA_CERT_PATH)
+        create_api = session.post(url=create_url, json=data, headers=headers, verify=CA_CERT_PATH)
         response = create_api.json()
 
         device_id = response['data']['id']
-        vpcs.append(device_id)
+        vpcs[data["name"]] = device_id
         print(f"Created vpc with device id: {device_id}")
 
+def create_network():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks'
+    data = {"count":1,"name":"Net-R2iface0","type":"bridge","visibility":1,"left":0,"top":0,"postfix":0}
+
+    login()
+    response = session.post(url=url, json=data, verify=CA_CERT_PATH)
+    network_id = response.json()['data']['id']
+    #return the network device ID
+    return network_id
+
+def connect_interfaces(node_id,interface_id,network_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes/{node_id}/interfaces"
+
+    data = {
+        interface_id:network_id
+    }
+
+    response = session.put(url=url, json=data, verify=CA_CERT_PATH)
+    print(response.json())
+
+def hide_networks(network_id):
+    hide_data = {"visibility": 0}
+    hide_url = f'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/networks/{network_id}'
+    response = session.put(url=hide_url, json=hide_data,verify=CA_CERT_PATH)
 # End function declarations
 
 create_router()
@@ -182,8 +219,20 @@ create_firewall()
 create_cloud()
 create_vpc()
 
-print(routers)
-print(switches)
-print(firewalls)
-print(cloud)
-print(vpcs)
+all_devices.update(routers)
+all_devices.update(switches)
+all_devices.update(firewalls)
+all_devices.update(cloud)
+all_devices.update(vpcs)
+
+#uses the links declared at the top to connect the devices on the correct interfaces
+for device1, int1, device2, int2 in links:
+
+    network_id = create_network()
+
+    connect_interfaces(all_devices[device1], int1, network_id)
+    connect_interfaces(all_devices[device2], int2, network_id)
+    hide_networks(network_id)
+#connect firewall to internet separately
+connect_interfaces(firewalls["ASA"],3,cloud["Internet"])
+
