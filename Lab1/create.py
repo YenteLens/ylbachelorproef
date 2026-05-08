@@ -241,6 +241,18 @@ def telnet_init(port_number):
 
     tn.write(b"\r\n")
 
+def upload_config(port_number, node_name):
+    login()
+
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    print(f"Uploading {node_name} config.")
+
+    with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip('\r\n')
+            tn.write(cmd.encode()+  b'\r')
+            time.sleep(1)
+    print("Done.")
 # End function declarations
 
 create_router()
@@ -276,3 +288,6 @@ for device in all_devices:
     tn_port = get_port(all_devices[device])
     if device != "ASA":
         telnet_init(tn_port)
+        upload_config(tn_port,device)
+    else:
+        upload_config(tn_port,device)
