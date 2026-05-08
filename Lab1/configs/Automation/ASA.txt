@@ -1,0 +1,88 @@
+enable
+rootroot
+rootroot
+configure terminal
+
+hostname ASA
+
+interface GigabitEthernet0/0
+ nameif inside
+ security-level 100
+ ip address 172.16.10.14 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ nameif externals
+ security-level 0
+ ip address 172.16.50.1 255.255.255.0
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ nameif internet
+ security-level 0
+ ip address 10.199.199.10 255.255.255.0
+ no shutdown
+exit
+
+dns domain-lookup internet
+
+dns server-group DefaultDNS
+ name-server 8.8.8.8
+exit
+
+same-security-traffic permit inter-interface
+
+object network INSIDE_NET
+ subnet 172.16.10.0 255.255.255.0
+ nat (inside,internet) dynamic interface
+exit
+
+object network HR
+ subnet 172.16.40.0 255.255.255.0
+ nat (inside,internet) dynamic interface
+exit
+
+object network IT
+ subnet 172.16.20.0 255.255.255.0
+ nat (inside,internet) dynamic interface
+exit
+
+object network RECEPTION
+ subnet 172.16.30.0 255.255.255.0
+ nat (inside,internet) dynamic interface
+exit
+
+object network EXTERNALS
+ subnet 172.16.50.0 255.255.255.0
+ nat (externals,internet) dynamic interface
+exit
+
+access-list EXTERNAL extended permit udp 172.16.50.0 255.255.255.0 any eq domain
+access-list EXTERNAL extended permit icmp 172.16.50.0 255.255.255.0 any
+
+access-group EXTERNAL in interface externals
+
+icmp permit any inside
+icmp permit any externals
+icmp permit 172.16.10.12 255.255.255.252 externals
+
+router ospf 100
+ network 172.16.10.12 255.255.255.252 area 0
+ network 172.16.10.16 255.255.255.252 area 0
+ network 172.16.50.0 255.255.255.0 area 1
+ log-adj-changes
+ default-information originate
+exit
+
+route internet 0.0.0.0 0.0.0.0 10.199.199.1 1
+
+policy-map global_policy
+ class inspection_default
+  inspect icmp
+exit
+
+service-policy global_policy global
+
+write memory

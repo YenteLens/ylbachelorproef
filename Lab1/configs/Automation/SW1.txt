@@ -1,0 +1,19 @@
+enable
+configure terminal
+
+hostname SW1
+
+spanning-tree mode rapid-pvst
+
+interface GigabitEthernet0/0
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ spanning-tree portfast edge
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+end
+write memory
