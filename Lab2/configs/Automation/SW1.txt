@@ -1,0 +1,53 @@
+enable
+configure terminal
+
+hostname SW1
+
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+spanning-tree vlan 1 priority 24576
+
+interface GigabitEthernet0/0
+ spanning-tree guard root
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ spanning-tree guard root
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ spanning-tree guard root
+ no shutdown
+exit
+
+interface GigabitEthernet0/3
+ spanning-tree portfast edge
+ spanning-tree bpdufilter enable
+ spanning-tree bpduguard enable
+ no shutdown
+exit
+
+interface GigabitEthernet1/0
+ no shutdown
+exit
+
+interface GigabitEthernet1/1
+ no shutdown
+exit
+
+interface GigabitEthernet1/2
+ no shutdown
+exit
+
+interface GigabitEthernet1/3
+ no shutdown
+exit
+
+line vty 0 4
+ login
+exit
+
+end
+write memory

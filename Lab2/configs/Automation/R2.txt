@@ -1,0 +1,47 @@
+enable
+configure terminal
+
+hostname R2
+
+interface Loopback0
+ ip address 2.2.2.2 255.255.255.255
+ no shutdown
+exit
+
+interface GigabitEthernet0/0
+ ip address 192.168.1.134 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ ip address 192.168.1.20 255.255.255.128
+ standby version 2
+ standby 10 ip 192.168.1.16
+ standby 10 priority 200
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ no ip address
+ shutdown
+exit
+
+interface GigabitEthernet0/3
+ no ip address
+ shutdown
+exit
+
+router ospf 100
+ passive-interface GigabitEthernet0/1
+ network 2.2.2.2 0.0.0.0 area 0
+ network 192.168.1.0 0.0.0.127 area 0
+ network 192.168.1.132 0.0.0.3 area 0
+exit
+
+line vty 0 4
+ login
+ transport input none
+exit
+
+end
+write memory

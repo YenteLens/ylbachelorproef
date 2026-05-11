@@ -1,0 +1,64 @@
+enable
+rootroot
+rootroot
+configure terminal
+
+hostname ASA
+
+interface GigabitEthernet0/0
+ nameif outside
+ security-level 0
+ ip address 172.16.1.129 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ nameif inside
+ security-level 100
+ ip address 192.168.1.129 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ nameif DMZ
+ security-level 50
+ ip address 10.0.0.129 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/3
+ nameif internet
+ security-level 0
+ ip address 10.199.199.20 255.255.255.0
+ no shutdown
+exit
+
+object network INSIDE-OUTSIDE
+ subnet 192.168.2.0 255.255.255.0
+ nat (inside,internet) dynamic interface
+exit
+
+object network DMZ-OUTSIDE
+ subnet 10.0.0.0 255.255.255.0
+ nat (DMZ,internet) dynamic interface
+exit
+
+object network EXTERNAL-INTERNET
+ subnet 172.16.1.0 255.255.255.0
+ nat (outside,internet) dynamic interface
+exit
+
+access-list INSIDE extended permit icmp 192.168.1.0 255.255.255.0 any
+access-group INSIDE in interface inside
+
+router ospf 100
+ network 10.0.0.128 255.255.255.252 area 0
+ network 172.16.1.128 255.255.255.252 area 1
+ network 192.168.1.128 255.255.255.252 area 0
+ log-adj-changes
+ default-information originate
+exit
+
+route internet 0.0.0.0 0.0.0.0 10.199.199.1 1
+
+write memory

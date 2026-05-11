@@ -1,0 +1,44 @@
+enable
+configure terminal
+
+hostname DMZ-R
+
+interface Loopback0
+ ip address 3.3.3.3 255.255.255.255
+ no shutdown
+exit
+
+interface GigabitEthernet0/0
+ ip address 10.0.0.130 255.255.255.252
+ ip ospf dead-interval 400
+ ip ospf hello-interval 11
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ ip address 10.0.0.10 255.255.255.128
+ no shutdown
+exit
+
+interface GigabitEthernet0/2
+ no ip address
+ shutdown
+exit
+
+interface GigabitEthernet0/3
+ no ip address
+ shutdown
+exit
+
+router ospf 100
+ network 10.0.0.0 0.0.0.127 area 0
+ network 10.0.0.128 0.0.0.3 area 0
+exit
+
+line vty 0 4
+ login
+ transport input none
+exit
+
+end
+write memory
