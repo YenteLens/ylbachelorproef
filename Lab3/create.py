@@ -1,0 +1,351 @@
+import time
+import requests
+import json
+
+from paramiko.auth_handler import GssapiWithMicAuthHandler
+from telnetlib3 import Telnet
+import urllib3
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+login_url = 'https://evepro.interligo.local/api/auth/login'
+cred = '{"username":"admin","password":"eve","html5":"0"}'
+headers = {'Accept': 'application/json'}
+
+# global session and certificate
+session = requests.session()
+CA_CERT_PATH = "./eveng.crt"
+
+# device_ids
+nxos = {}
+routers = {}
+switches = {}
+firewalls = {}
+cloud = {}
+vpcs = {}
+
+all_devices = {}
+
+# Topology
+links = [
+    ("Core-RT-A", 0, "Core-RT-C", 2),
+    ("Core-RT-A", 1, "Core-RT-B", 1),
+    ("Core-RT-A", 2, "Core-RT-B", 3),
+    ("Core-RT-A", 3, "ASA-Edge", 1),
+    ("Core-RT-A", 4, "ASA-Edge", 2),
+    ("Core-RT-A", 5, "DMZ-Router", 0),
+    ("Core-RT-B", 2, "Core-RT-C", 1),
+    ("Core-RT-B", 4, "ASA-DMZ", 1),
+    ("Core-RT-B", 5, "Access-SW", 0),
+    ("Core-RT-B", 6, "Access-SW", 1),
+    ("Core-RT-B", 7, "SW-B", 0),
+    ("Core-RT-B", 8, "SW-B", 1),
+    ("Core-RT-C", 3, "SW-C", 0),
+    ("Core-RT-C", 4, "SW-C", 1),
+    ("SW-C", 2, "C-Host", 0),
+    ("SW-B", 2, "B-PC2", 0),
+    ("Access-SW", 2, "Printer", 0),
+    ("Access-SW", 3, "B-PC1", 0),
+    ("ASA-DMZ", 2, "DMZ-SW", 0),
+    ("DMZ-SW", 1, "DMZ-Host-B", 0),
+    ("DMZ-Router", 1, "DMZ-Host-A", 0),
+    ("ASA-Edge", 3, "ASA-S2S", 1),
+    ("ASA-Edge", 4, "WAN-SW", 0),
+    ("ASA-S2S", 2, "WAN-SW", 1),
+    ("Remote-ASA", 2, "Remote-SW", 0),
+    ("Remote-SW", 1, "Remote-Host", 0),
+]
+
+
+# Functions
+
+def login():
+    response = session.post(
+        login_url,
+        json={"username": "admin", "password": "eve", "html5": "0"},
+        verify=CA_CERT_PATH
+    )
+    # checks for errors in HTTP response, if it finds one execution is stopped
+    response.raise_for_status()
+    print("Logged in")
+
+
+def create_nxos():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+    base_data = {"image": "nxosv9k-9300v-10.4.2.F", "name": "NXOS", "icon": "Switch-3D-L3-S.svg", "cpulimit": 0,
+                 "cpu": 2, "ram": 8192, "ethernet": 9, "qemu_version": "4.1.0", "qemu_arch": "x86_64",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -enable-kvm -cpu host",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 600, "top": 500, "count": 1,
+                 "template": "nxosv9k", "type": "qemu", "postfix": 0}
+
+    for i in range(2):
+        data = base_data.copy()
+
+        data["name"] = f"NXOS{i + 1}"
+
+        match data["name"]:
+            case "NXOS1":
+                data["name"] = "Core-RT-B"
+            case "NXOS2":
+                data["name"] = "Core-RT-C"
+                data["left"] = 850
+
+        login()
+        create_api = session.post(url=url, json=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        nxos[data["name"]] = device_id
+        print(f"Created nxos with device id: {device_id}")
+
+
+def create_router():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+    base_data = {"image": "vios-adventerprisek9-m.spa.159-3.m9", "name": "vIOS", "icon": "Router.png", "cpulimit": 1,
+                 "cpu": 1, "ram": 1024, "ethernet": 6, "qemu_version": "2.4.0", "qemu_arch": "x86_64",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 725, "top": 350, "count": 1,
+                 "template": "vios", "type": "qemu", "postfix": 0}
+
+    for i in range(2):
+        data = base_data.copy()
+
+        data["name"] = f"R{i + 1}"
+
+        match data["name"]:
+            case "R1":
+                data["name"] = "Core-RT-A"
+            case "R2":
+                data["name"] = "DMZ-Router"
+                data["left"] = 400
+
+        login()
+        create_api = session.post(url=url, json=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        routers[data["name"]] = device_id
+        print(f"Created router with device id: {device_id}")
+
+
+def create_switch():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+    base_data = {"image": "viosl2-adventerprisek9-m-15.2.4055", "name": "Switch", "icon": "Switch.png", "cpulimit": 1,
+                 "cpu": 1, "ram": 1024, "ethernet": 8, "qemu_version": "2.4.0", "qemu_arch": "x86_64",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -nodefaults -rtc base=utc -cpu host",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 525, "top": 700, "count": 1,
+                 "template": "viosl2", "type": "qemu", "postfix": 0}
+
+    for i in range(6):
+        data = base_data.copy()
+
+        data["name"] = f"SW{i + 1}"
+
+        match data["name"]:
+            case "SW1":
+                data["name"] = "Access-SW"
+            case "SW2":
+                data["name"] = "SW-B"
+                data["left"] = 650
+            case "SW3":
+                data["name"] = "SW-C"
+                data["left"] = 850
+            case "SW4":
+                data["name"] = "DMZ-SW"
+                data["left"] = 250
+                data["top"] = 500
+            case "SW5":
+                data["name"] = "WAN-SW"
+                data["left"] = 725
+                data["top"] = 125
+            case "SW6":
+                data["name"] = "Remote-SW"
+                data["left"] = 1075
+                data["top"] = 250
+
+        login()
+        create_api = session.post(url=url, json=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        switches[data["name"]] = device_id
+        print(f"Created switch with device id: {device_id}")
+
+
+def create_firewall():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+    base_data = {"image": "asav-9-20-2-22", "name": "ASAv", "icon": "Firewall.png", "cpulimit": 1, "cpu": 1,
+                 "ram": 2048, "ethernet": 8, "qemu_version": "2.12.0", "qemu_arch": "x86_64",
+                 "qemu_nic": "virtio-net-pci",
+                 "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -no-user-config -cpu host -nodefaults -display none -vga std -rtc base=utc",
+                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 425, "top": 500, "count": 1,
+                 "template": "asav", "type": "qemu", "postfix": 0}
+
+    for i in range(4):
+        data = base_data.copy()
+
+        data["name"] = f"ASA{i + 1}"
+
+        match data["name"]:
+            case "ASA1":
+                data["name"] = "ASA-DMZ"
+            case "ASA2":
+                data["name"] = "ASA-Edge"
+                data["left"] = 625
+                data["top"] = 250
+            case "ASA3":
+                data["name"] = "ASA-S2S"
+                data["left"] = 825
+                data["top"] = 250
+            case "ASA4":
+                data["name"] = "Remote-ASA"
+                data["left"] = 1075
+                data["top"] = 125
+        login()
+        create_api = session.post(url=url, json=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        firewalls[data["name"]] = device_id
+        print(f"Created firewall with device id: {device_id}")
+
+
+def create_vpc():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+    base_data = {"name": "VPC", "icon": "Desktop.png", "config": "0", "sat": "-1", "delay": 0,
+                 "left": 250, "top": 350, "count": 1, "template": "vpcs", "type": "vpcs", "postfix": 0}
+
+    for i in range(7):
+        data = base_data.copy()
+
+        data["name"] = f"VPC{i + 1}"
+
+        match data["name"]:
+            case "VPC1":
+                data["name"] = "DMZ-Host-A"
+            case "VPC2":
+                data["name"] = "DMZ-Host-B"
+                data["left"] = 125
+                data["top"] = 500
+            case "VPC3":
+                data["name"] = "Printer"
+                data["icon"] = "Server.png"
+                data["left"] = 450
+                data["top"] = 850
+            case "VPC4":
+                data["name"] = "B-PC1"
+                data["left"] = 550
+                data["top"] = 850
+            case "VPC5":
+                data["name"] = "B-PC2"
+                data["left"] = 650
+                data["top"] = 850
+            case "VPC6":
+                data["name"] = "C-Host"
+                data["left"] = 850
+                data["top"] = 850
+            case "VPC7":
+                data["name"] = "Remote-Host"
+                data["left"] = 1225
+                data["top"] = 250
+
+        login()
+        create_api = session.post(url=url, json=data, headers=headers, verify=CA_CERT_PATH)
+        response = create_api.json()
+
+        device_id = response['data']['id']
+        vpcs[data["name"]] = device_id
+        print(f"Created vpc with device id: {device_id}")
+
+def create_cloud():
+    create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/networks'
+    base_data = {"name": "Internet", "type": "pnet1", "icon": "01-Cloud-Default.svg", "left": 900, "top": 50,
+                 "count": 1, "postfix": 0, "visibility": 1}
+
+    login()
+    create_api = session.post(url=create_url, json=base_data, headers=headers, verify=CA_CERT_PATH)
+    response = create_api.json()
+
+    device_id = response['data']['id']
+    cloud[base_data["name"]] = device_id
+    print(f"Created cloud with network id: {device_id}")
+
+def create_network():
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/networks'
+    data = {"count":1,"name":"Net-R2iface0","type":"bridge","visibility":1,"left":0,"top":0,"postfix":0}
+
+    login()
+    response = session.post(url=url, json=data, verify=CA_CERT_PATH)
+    network_id = response.json()['data']['id']
+    #return the network device ID
+    return network_id
+
+def connect_interfaces(node_id,interface_id,network_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes/{node_id}/interfaces"
+
+    data = {
+        interface_id:network_id
+    }
+
+    response = session.put(url=url, json=data, verify=CA_CERT_PATH)
+    print(response.json())
+
+def hide_networks(network_id):
+    hide_data = {"visibility": 0}
+    hide_url = f'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/networks/{network_id}'
+    response = session.put(url=hide_url, json=hide_data,verify=CA_CERT_PATH)
+
+def start(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes/{node_id}/start"
+    response = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
+    print(f"Device with id: {node_id} started")
+# End functions
+
+create_nxos()
+create_router()
+create_switch()
+create_firewall()
+create_vpc()
+create_cloud()
+
+all_devices.update(nxos)
+all_devices.update(routers)
+all_devices.update(switches)
+all_devices.update(firewalls)
+all_devices.update(vpcs)
+
+
+#uses the links declared at the top to connect the devices on the correct interfaces
+for device1, int1, device2, int2 in links:
+
+    network_id = create_network()
+
+    connect_interfaces(all_devices[device1], int1, network_id)
+    connect_interfaces(all_devices[device2], int2, network_id)
+    hide_networks(network_id)
+    print(f"{device1}:{int1} <--> {device2}:{int2}")
+connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
+connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
+
+for device in all_devices:
+    login()
+
+    if device == "Core-RT-B":
+        start(all_devices[device])
+        print("Starting NXOS, waiting 60 seconds...")
+        time.sleep(60)
+    elif device == "Core-RT-C":
+        start(all_devices[device])
+        print("Starting NXOS, waiting 60 seconds...")
+        time.sleep(60)
+    else:
+        start(all_devices[device])
+        time.sleep(10)
+
+print("Waiting for devices to boot...(630) seconds")
+time.sleep(300)
+print("5 Minutes elapsed.")
+time.sleep(180)
+print("2 Minutes left.")
+time.sleep(150)
+print("Done.")
