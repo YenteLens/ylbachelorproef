@@ -1,0 +1,107 @@
+yes
+no
+Root1234?
+Root1234?
+no
+admin
+Root1234?
+configure terminal
+
+hostname Core-RT-C
+
+feature bgp
+feature interface-vlan
+feature lacp
+
+username admin password 5 $5$ADKJMG$PDz7dl74Gh9eNfvgWGCeEG4CR3v35ZE5vE7ZiyFJjN/ role network-admin
+
+ip domain-lookup
+copp profile strict
+
+snmp-server user admin network-admin auth md5 52130AAF6837AAF6E2BBF1BC1429EF48CF97 priv aes-128 204F7F9C431FABFAFAF898A14F60FE148FF9 localizedV2key
+
+rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+vlan 10
+  name Users
+exit
+
+vrf context LAN
+exit
+
+interface Vlan10
+  no shutdown
+  vrf member LAN
+  ip address 200.0.1.1/30
+exit
+
+interface port-channel1
+  switchport mode trunk
+  switchport trunk allowed vlan 10
+exit
+
+interface Ethernet1/1
+  no switchport
+  vrf member LAN
+  ip address 10.0.1.14/30
+  no shutdown
+exit
+
+interface Ethernet1/2
+  no switchport
+  vrf member LAN
+  ip address 10.0.1.10/30
+  no shutdown
+exit
+
+interface Ethernet1/3
+  switchport mode trunk
+  switchport trunk allowed vlan 10
+  channel-group 1 mode active
+exit
+
+interface Ethernet1/4
+  switchport mode trunk
+  switchport trunk allowed vlan 10
+  channel-group 1 mode active
+exit
+
+interface mgmt0
+  vrf member management
+exit
+
+interface loopback0
+  ip address 3.3.3.3/32
+exit
+
+router bgp 65003
+  address-family ipv4 unicast
+  exit
+
+  vrf LAN
+    address-family ipv4 unicast
+      export-gateway-ip
+    exit
+
+    neighbor 10.0.1.9
+      remote-as 65001
+      address-family ipv4 unicast
+      exit
+    exit
+
+    neighbor 10.0.1.13
+      remote-as 65002
+      address-family ipv4 unicast
+      exit
+    exit
+  exit
+exit
+
+boot nxos bootflash:/nxos64-cs.10.4.2.F.bin
+
+end
+copy running-config startup-config

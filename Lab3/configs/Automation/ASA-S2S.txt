@@ -1,0 +1,69 @@
+enable
+configure terminal
+
+hostname ASA-S2S
+
+interface GigabitEthernet0/0
+ nameif inside
+ security-level 100
+ ip address 192.168.1.10 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ nameif outside
+ security-level 0
+ ip address 10.199.199.30 255.255.255.0
+ no shutdown
+exit
+
+object network REMOTE-LAN
+ subnet 100.0.0.0 255.255.255.252
+exit
+
+object-group network LOCAL-LAN
+ network-object 172.16.1.0 255.255.255.248
+ network-object 172.16.1.8 255.255.255.248
+exit
+
+access-list VPN-ACL extended permit ip object-group LOCAL-LAN object REMOTE-LAN
+
+nat (inside,outside) source static LOCAL-LAN LOCAL-LAN destination static REMOTE-LAN REMOTE-LAN no-proxy-arp route-lookup
+
+route outside 0.0.0.0 0.0.0.0 10.199.199.1 1
+route inside 10.0.1.0 255.255.255.0 192.168.1.9 1
+route inside 172.16.1.0 255.255.255.0 192.168.1.9 1
+route inside 172.16.20.0 255.255.255.0 192.168.1.9 1
+route inside 192.168.20.0 255.255.255.252 192.168.1.9 1
+route inside 192.168.20.4 255.255.255.252 192.168.1.9 1
+route inside 200.0.1.0 255.255.255.252 192.168.1.9 1
+
+crypto ipsec ikev2 ipsec-proposal IPSEC-PROP
+ protocol esp encryption aes-256
+ protocol esp integrity sha-256
+exit
+
+crypto ikev2 policy 10
+ encryption aes-256
+ integrity sha256
+ group 14
+ prf sha256
+ lifetime seconds 86400
+exit
+
+crypto ikev2 enable outside
+
+crypto map VPN-MAP 10 match address VPN-ACL
+crypto map VPN-MAP 10 set peer 10.199.199.40
+crypto map VPN-MAP 10 set ikev2 ipsec-proposal IPSEC-PROP
+crypto map VPN-MAP interface outside
+
+tunnel-group 10.199.199.40 type ipsec-l2l
+
+tunnel-group 10.199.199.40 ipsec-attributes
+ ikev2 remote-authentication pre-shared-key cisco123
+ ikev2 local-authentication pre-shared-key cisco123
+exit
+
+write memory
+exit

@@ -1,0 +1,88 @@
+enable
+conf t
+
+hostname Core-RT-A
+
+ip vrf DMZ
+ rd 1:2
+
+ip vrf LAN
+ rd 1:1
+
+interface Loopback0
+ ip address 1.1.1.1 255.255.255.255
+ no shutdown
+ exit
+
+interface GigabitEthernet0/0
+ ip vrf forwarding LAN
+ ip address 10.0.1.9 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/1
+ ip vrf forwarding LAN
+ ip address 10.0.1.1 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/2
+ ip vrf forwarding DMZ
+ ip address 10.0.1.1 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/3
+ ip vrf forwarding LAN
+ ip address 192.168.10.1 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/4
+ ip vrf forwarding DMZ
+ ip address 192.168.10.5 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/5
+ ip vrf forwarding DMZ
+ ip address 192.168.20.1 255.255.255.252
+ no shutdown
+ exit
+
+router rip
+ version 2
+ passive-interface default
+ no passive-interface GigabitEthernet0/5
+ default-information originate
+ address-family ipv4 vrf DMZ
+  network 10.0.0.0
+  network 192.168.10.0
+  network 192.168.20.0
+  default-information originate
+  no auto-summary
+  version 2
+ exit-address-family
+ exit
+
+router bgp 65001
+ address-family ipv4 vrf DMZ
+  network 192.168.10.4 mask 255.255.255.252
+  network 192.168.20.0 mask 255.255.255.252
+  network 192.168.20.4 mask 255.255.255.252
+  redistribute static
+  default-information originate
+ exit-address-family
+
+ address-family ipv4 vrf LAN
+  network 10.0.1.0 mask 255.255.255.252
+  network 192.168.10.0 mask 255.255.255.252
+  redistribute static
+  default-information originate
+ exit-address-family
+ exit
+
+ip route vrf DMZ 0.0.0.0 0.0.0.0 192.168.10.6
+ip route vrf LAN 0.0.0.0 0.0.0.0 192.168.10.2
+
+exit

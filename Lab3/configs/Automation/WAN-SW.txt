@@ -1,0 +1,43 @@
+enable
+conf t
+
+hostname WAN-SW
+
+spanning-tree mode rapid-pvst
+spanning-tree extend system-id
+
+interface GigabitEthernet0/0
+ no shutdown
+ exit
+
+interface GigabitEthernet0/1
+ no shutdown
+ exit
+
+interface GigabitEthernet0/2
+ no shutdown
+ spanning-tree bpdufilter enable
+ spanning-tree bpduguard enable
+ exit
+
+interface GigabitEthernet0/3
+ no shutdown
+ exit
+
+interface GigabitEthernet1/0
+ no shutdown
+ exit
+
+interface GigabitEthernet1/1
+ no shutdown
+ exit
+
+interface GigabitEthernet1/2
+ no shutdown
+ exit
+
+interface GigabitEthernet1/3
+ no shutdown
+ exit
+
+exit

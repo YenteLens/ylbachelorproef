@@ -1,0 +1,2 @@
+set pcname Remote-Host
+ip 100.0.0.6/30

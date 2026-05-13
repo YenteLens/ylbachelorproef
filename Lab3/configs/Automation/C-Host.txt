@@ -1,0 +1,2 @@
+set pcname C-Host
+ip 200.0.1.2/30

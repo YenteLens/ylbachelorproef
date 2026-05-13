@@ -1,0 +1,31 @@
+enable
+conf t
+
+hostname DMZ-Router
+
+ip vrf DMZ
+
+interface GigabitEthernet0/0
+ ip vrf forwarding DMZ
+ ip address 192.168.20.2 255.255.255.252
+ no shutdown
+ exit
+
+interface GigabitEthernet0/1
+ ip vrf forwarding DMZ
+ ip address 192.168.20.5 255.255.255.252
+ no shutdown
+ exit
+
+router rip
+ version 2
+ passive-interface default
+ no passive-interface GigabitEthernet0/0
+ address-family ipv4 vrf DMZ
+  network 192.168.20.0
+  no auto-summary
+  version 2
+ exit-address-family
+ exit
+
+exit

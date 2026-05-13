@@ -1,0 +1,160 @@
+yes
+no
+Root1234?
+Root1234?
+no
+admin
+Root1234?
+configure terminal
+
+hostname Core-RT-B
+
+feature ospf
+feature bgp
+feature interface-vlan
+feature lacp
+
+no password strength-check
+
+username admin password 5 $5$LADADB$2kMDc2Y/ioqEaHLTnS7QGV8jt7WJni4kLqVzxg9PCX9 role network-admin
+
+ip domain-lookup
+copp profile strict
+
+snmp-server user admin network-admin auth md5 332D33382FCD9459ED340767A99693CED97A priv aes-128 320C7C77266A32DB3ABC94FD6157555D42B6 localizedV2key
+
+rmon event 1 log trap public description FATAL(1) owner PMON@FATAL
+rmon event 2 log trap public description CRITICAL(2) owner PMON@CRITICAL
+rmon event 3 log trap public description ERROR(3) owner PMON@ERROR
+rmon event 4 log trap public description WARNING(4) owner PMON@WARNING
+rmon event 5 log trap public description INFORMATION(5) owner PMON@INFO
+
+vlan 10
+  name User
+exit
+
+vlan 20
+  name Printer
+exit
+
+vrf context DMZ
+exit
+
+vrf context LAN
+  rd 65002:1
+  address-family ipv4 unicast
+  exit
+exit
+
+ip route 172.16.1.0/29 Vlan10 vrf LAN
+
+interface Vlan10
+  no shutdown
+  vrf member LAN
+  ip address 172.16.1.1/29
+exit
+
+interface Vlan20
+  no shutdown
+  vrf member LAN
+  ip address 172.16.1.9/29
+exit
+
+interface port-channel1
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+exit
+
+interface port-channel2
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+exit
+
+interface Ethernet1/1
+  no switchport
+  vrf member LAN
+  ip address 10.0.1.2/30
+  no shutdown
+exit
+
+interface Ethernet1/2
+  no switchport
+  vrf member LAN
+  ip address 10.0.1.13/30
+  no shutdown
+exit
+
+interface Ethernet1/3
+  no switchport
+  vrf member DMZ
+  ip address 10.0.1.2/30
+  no shutdown
+exit
+
+interface Ethernet1/4
+  no switchport
+  vrf member DMZ
+  ip address 172.16.20.1/30
+  ip router ospf 1 area 0.0.0.0
+  no shutdown
+exit
+
+interface Ethernet1/5
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+exit
+
+interface Ethernet1/6
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+exit
+
+interface Ethernet1/7
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+  channel-group 2 mode active
+exit
+
+interface Ethernet1/8
+  switchport mode trunk
+  switchport trunk allowed vlan 10,20
+  channel-group 2 mode active
+exit
+
+interface mgmt0
+  vrf member management
+exit
+
+interface loopback0
+  ip address 2.2.2.2/32
+exit
+
+router ospf 1
+  default-information originate
+  vrf DMZ
+exit
+
+router bgp 65002
+  address-family ipv4 unicast
+  exit
+
+  vrf DMZ
+    address-family ipv4 unicast
+      network 172.16.20.0/30
+      network 172.16.20.4/30
+    exit
+  exit
+
+  vrf LAN
+    address-family ipv4 unicast
+      network 172.16.1.0/29
+      network 172.16.1.8/29
+      export-gateway-ip
+    exit
+  exit
+exit
+
+boot nxos bootflash:/nxos64-cs.10.4.2.F.bin
+
+end
+copy running-config startup-config

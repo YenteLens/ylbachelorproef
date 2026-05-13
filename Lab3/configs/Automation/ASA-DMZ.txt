@@ -1,0 +1,42 @@
+enable
+rootroot
+rootroot
+configure terminal
+
+hostname ASA-DMZ
+
+interface GigabitEthernet0/0
+ nameif inside
+ security-level 100
+ ip address 172.16.20.2 255.255.255.252
+ no shutdown
+exit
+
+interface GigabitEthernet0/1
+ nameif outside
+ security-level 0
+ ip address 172.16.20.5 255.255.255.252
+ no shutdown
+exit
+
+access-list DMZ extended permit icmp 172.16.20.4 255.255.255.252 any
+access-group DMZ in interface outside
+
+router ospf 1
+ network 172.16.20.0 255.255.255.252 area 0
+ network 172.16.20.4 255.255.255.252 area 0
+ log-adj-changes
+exit
+
+route inside 0.0.0.0 0.0.0.0 172.16.20.1 1
+
+policy-map global_policy
+ class inspection_default
+  inspect icmp
+ exit
+exit
+
+service-policy global_policy global
+
+end
+write memory
