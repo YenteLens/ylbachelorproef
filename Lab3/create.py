@@ -288,7 +288,7 @@ def connect_interfaces(node_id,interface_id,network_id):
     }
 
     response = session.put(url=url, json=data, verify=CA_CERT_PATH)
-    print(response.json())
+    #print(response.json())
 
 def hide_networks(network_id):
     hide_data = {"visibility": 0}
@@ -299,6 +299,47 @@ def start(node_id):
     url = f"https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes/{node_id}/start"
     response = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
     print(f"Device with id: {node_id} started")
+
+def get_port(node_id):
+    url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
+
+    login()
+
+    nodes = session.get(url=url, headers=headers,verify=CA_CERT_PATH)
+
+    data = nodes.json()
+    node_dict = data['data']
+
+    port_details = node_dict[f'{node_id}']['url']
+    port_number = int(port_details[-5:])
+
+    return port_number
+
+def telnet_init(port_number):
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"\n")
+    tn.write(b"no\n")
+
+    tn.write(b"\r\n")
+
+def upload_config(port_number, node_name):
+    login()
+
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    print(f"Uploading {node_name} config.")
+
+    with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip('\r\n')
+            tn.write(cmd.encode()+  b'\r')
+            time.sleep(0.5)
+    print("Done.")
+
+def disable_poap(port_number):
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    tn.write(b"yes\n")
 # End functions
 
 create_nxos()
@@ -324,28 +365,46 @@ for device1, int1, device2, int2 in links:
     connect_interfaces(all_devices[device2], int2, network_id)
     hide_networks(network_id)
     print(f"{device1}:{int1} <--> {device2}:{int2}")
-connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
-connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
 
 for device in all_devices:
     login()
 
-    if device == "Core-RT-B":
-        start(all_devices[device])
-        print("Starting NXOS, waiting 60 seconds...")
-        time.sleep(60)
-    elif device == "Core-RT-C":
-        start(all_devices[device])
-        print("Starting NXOS, waiting 60 seconds...")
-        time.sleep(60)
-    else:
-        start(all_devices[device])
-        time.sleep(10)
+    start(all_devices[device])
+    time.sleep(2)
 
-print("Waiting for devices to boot...(630) seconds")
-time.sleep(300)
-print("5 Minutes elapsed.")
-time.sleep(180)
-print("2 Minutes left.")
-time.sleep(150)
-print("Done.")
+print("Letting devices boot, 100 seconds...")
+time.sleep(100)
+# print("5 minutes have passed")
+# time.sleep(240)
+# print("Done")
+
+for switch in nxos:
+    tn_port = get_port(nxos[switch])
+    disable_poap(tn_port)
+
+for device in all_devices:
+    match device:
+        case "Core-RT-B":
+            pass
+        case "Core-RT-C":
+            pass
+        case _:
+            tn_port = get_port(all_devices[device])
+            telnet_init(tn_port)
+            upload_config(tn_port, device)
+
+
+    # if device == "ASA-DMZ":
+    #     upload_config(tn_port, device)
+    # elif device == "ASA-Edge":
+    #     upload_config(tn_port, device)
+    # elif device == "ASA-S2S":
+    #     upload_config(tn_port, device)
+    # elif device == "Remote-ASA":
+    #     upload_config(tn_port, device)
+    # else:
+    #     telnet_init(tn_port)
+    #     upload_config(tn_port, device)
+
+# connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
+# connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
