@@ -230,9 +230,9 @@ def get_port(node_id):
 
 def telnet_init(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
-    tn.write(b"\n")
-    tn.write(b"\n")
-    tn.write(b"\n")
+    for _ in range (3):
+        tn.write(b"\r\n")
+
     tn.write(b"no\n")
 
     tn.write(b"\r\n")
