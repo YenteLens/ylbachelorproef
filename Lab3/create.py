@@ -317,9 +317,9 @@ def get_port(node_id):
 
 def telnet_init(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
-    tn.write(b"\n")
-    tn.write(b"\n")
-    tn.write(b"\n")
+    for _ in range (3):
+        tn.write(b"\r\n")
+
     tn.write(b"no\n")
 
     tn.write(b"\r\n")
@@ -334,12 +334,26 @@ def upload_config(port_number, node_name):
         for cmd in cmd_file.readlines():
             cmd = cmd.strip('\r\n')
             tn.write(cmd.encode()+  b'\r')
-            time.sleep(0.5)
+            time.sleep(1)
     print("Done.")
 
 def disable_poap(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
     tn.write(b"yes\n")
+
+def nxos_init(port_number):
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    tn.write(b"no\r\n")
+    tn.write(b"Root1234?\n")
+    tn.write(b"Root1234?\n")
+    tn.write(b"no\r\n")
+
+    time.sleep(10)
+def nxos_login(port_number):
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+    tn.write(b"admin\r\n")
+    tn.write(b"Root1234?\r\n")
+
 # End functions
 
 create_nxos()
@@ -372,39 +386,39 @@ for device in all_devices:
     start(all_devices[device])
     time.sleep(2)
 
-print("Letting devices boot, 100 seconds...")
-time.sleep(100)
-# print("5 minutes have passed")
-# time.sleep(240)
-# print("Done")
+print("Letting devices boot, 540 seconds...")
+time.sleep(300)
+print("5 minutes have passed")
+time.sleep(240)
+print("Done")
 
 for switch in nxos:
     tn_port = get_port(nxos[switch])
     disable_poap(tn_port)
 
+print("Sleeping for 5 minutes...")
+time.sleep(300)
+print("Done")
+
 for device in all_devices:
     match device:
         case "Core-RT-B":
-            pass
+            tn_port = get_port(all_devices[device])
+            nxos_init(tn_port)
+            nxos_login(tn_port)
+            upload_config(tn_port,device)
         case "Core-RT-C":
-            pass
+            tn_port = get_port(all_devices[device])
+            nxos_login(tn_port)
+            nxos_init(tn_port)
+            upload_config(tn_port, device)
         case _:
             tn_port = get_port(all_devices[device])
             telnet_init(tn_port)
             upload_config(tn_port, device)
 
 
-    # if device == "ASA-DMZ":
-    #     upload_config(tn_port, device)
-    # elif device == "ASA-Edge":
-    #     upload_config(tn_port, device)
-    # elif device == "ASA-S2S":
-    #     upload_config(tn_port, device)
-    # elif device == "Remote-ASA":
-    #     upload_config(tn_port, device)
-    # else:
-    #     telnet_init(tn_port)
-    #     upload_config(tn_port, device)
 
-# connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
-# connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
+
+connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
+connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
