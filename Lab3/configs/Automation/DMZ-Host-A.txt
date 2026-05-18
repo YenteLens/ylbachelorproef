@@ -1,3 +1,4 @@
-set pcname DMZ-Host
+set pcname DMZ-Host-A
 ip 192.168.20.6/30 192.168.20.5
+set pcname DMZ-Host-A
 save

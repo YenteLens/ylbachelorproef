@@ -1,3 +1,4 @@
 set pcname C-Host
 ip 200.0.1.2/30
+set pcname C-Host
 save
