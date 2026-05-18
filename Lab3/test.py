@@ -74,6 +74,9 @@ def nxos_init(port_number):
     tn.write(b"no\r\n")
     tn.write(b"Root1234?\n")
     tn.write(b"Root1234?\n")
+
+    time.sleep(5)
+
     tn.write(b"no\r\n")
 
     time.sleep(10)
@@ -81,20 +84,26 @@ def nxos_login(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
     tn.write(b"admin\r\n")
     tn.write(b"Root1234?\r\n")
+
+    with open(f"./configs/Automation/Core-RT-B.txt", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip('\r\n')
+            tn.write(cmd.encode()+  b'\r')
+            time.sleep(1)
 #######################################################################################
 
 id = create_nxos()
 
 start(id)
 
-print("Letting devices boot, 540 seconds...")
+print("Letting devices boot, 600 seconds...")
 time.sleep(300)
 print("5 minutes have passed")
-time.sleep(240)
+time.sleep(300)
 print("Done")
 
 port = get_port(id)
-disable_poap(id)
+disable_poap(port)
 
 print("Sleeping for 5 minutes...")
 time.sleep(300)
