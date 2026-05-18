@@ -330,6 +330,17 @@ def upload_config(port_number, node_name):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
     print(f"Uploading {node_name} config.")
 
+    if node_name == "Core-RT-B":
+        tn.write(b"admin\r\n")
+        time.sleep(10)
+        tn.write(b"Root1234?\r\n")
+        time.sleep(10)
+    elif node_name == "Core-RT-C":
+        tn.write(b"admin\r\n")
+        time.sleep(10)
+        tn.write(b"Root1234?\r\n")
+        time.sleep(10)
+
     with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
         for cmd in cmd_file.readlines():
             cmd = cmd.strip('\r\n')
@@ -346,14 +357,12 @@ def nxos_init(port_number):
     tn.write(b"no\r\n")
     tn.write(b"Root1234?\n")
     tn.write(b"Root1234?\n")
+
+    time.sleep(10)
+
     tn.write(b"no\r\n")
 
     time.sleep(10)
-def nxos_login(port_number):
-    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
-    tn.write(b"admin\r\n")
-    tn.write(b"Root1234?\r\n")
-
 # End functions
 
 create_nxos()
@@ -386,10 +395,10 @@ for device in all_devices:
     start(all_devices[device])
     time.sleep(2)
 
-print("Letting devices boot, 540 seconds...")
+print("Letting devices boot, 600 seconds...")
 time.sleep(300)
 print("5 minutes have passed")
-time.sleep(240)
+time.sleep(300)
 print("Done")
 
 for switch in nxos:
@@ -405,11 +414,9 @@ for device in all_devices:
         case "Core-RT-B":
             tn_port = get_port(all_devices[device])
             nxos_init(tn_port)
-            nxos_login(tn_port)
             upload_config(tn_port,device)
         case "Core-RT-C":
             tn_port = get_port(all_devices[device])
-            nxos_login(tn_port)
             nxos_init(tn_port)
             upload_config(tn_port, device)
         case _:
