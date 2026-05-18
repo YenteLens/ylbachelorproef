@@ -1,4 +1,6 @@
 enable
+rootroot
+rootroot
 configure terminal
 
 hostname ASA-S2S

@@ -1,2 +1,3 @@
 set pcname Printer
 ip 172.16.1.10/29 172.16.1.9
+save
