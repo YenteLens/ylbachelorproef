@@ -2,7 +2,7 @@ import time
 import requests
 import json
 
-from paramiko.auth_handler import GssapiWithMicAuthHandler
+#from paramiko.auth_handler import GssapiWithMicAuthHandler
 from telnetlib3 import Telnet
 import urllib3
 
@@ -331,14 +331,16 @@ def upload_config(port_number, node_name):
     print(f"Uploading {node_name} config.")
 
     if node_name == "Core-RT-B":
-        tn.write(b"admin\r\n")
+        tn.write(b"\n")
+        tn.write(b"admin\n")
         time.sleep(10)
-        tn.write(b"Root1234?\r\n")
+        tn.write(b"Root1234?\n")
         time.sleep(10)
     elif node_name == "Core-RT-C":
-        tn.write(b"admin\r\n")
+        tn.write(b"\n")
+        tn.write(b"admin\n")
         time.sleep(10)
-        tn.write(b"Root1234?\r\n")
+        tn.write(b"Root1234?\n")
         time.sleep(10)
 
     with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
