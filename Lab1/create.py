@@ -54,6 +54,77 @@ def login():
     response.raise_for_status()
     print("Logged in")
 
+def create_folder(folder_name):
+    if folder_check(folder_name):
+        print(f"Folder '{folder_name}' already exists")
+        return
+
+    url = "https://evepro.interligo.local/api/folders"
+    data = {"path": "/", "name": f"{folder_name}"}
+
+    create_api = session.post(url=url, headers=headers, json=data, verify=CA_CERT_PATH)
+    response = create_api.json()
+
+    print(response)
+
+
+def folder_check(folder_name):
+    url = "https://evepro.interligo.local/api/folders//"
+
+    response = session.get(url=url, headers=headers, verify=CA_CERT_PATH)
+    response.raise_for_status()
+
+    data = response.json()
+
+    folders = data.get("data", {}).get("folders", [])
+
+    for folder in folders:
+        if folder.get("name") == folder_name:
+            return True
+
+    return False
+
+
+def create_lab(lab_name, folder_name):
+    if lab_check(lab_name, folder_name):
+        print(f"Lab '{lab_name}' already exists")
+        return
+
+    url = "https://evepro.interligo.local/api/labs"
+    data = {"path": f"/{folder_name}", "author": "", "body": "", "countdown": 0, "description": "", "grid": 1, "linkwidth": 1,
+            "name": f"{lab_name}", "sat": "-1", "scripttimeout": 600, "shared": [], "version": 0}
+
+    create_api = session.post(url=url, headers=headers, json=data, verify=CA_CERT_PATH)
+    response = create_api.json()
+
+    print(response)
+
+    activate_url = f"https://evepro.interligo.local/api/labs/{folder_name}/{lab_name}.unl/filter/activate"
+    activate_api = session.post(activate_url, headers=headers, verify=CA_CERT_PATH)
+
+    activation = activate_api.json()
+
+    print(activation)
+
+def lab_check(lab_name, folder_name):
+    url = f"https://evepro.interligo.local/api/folders/{folder_name}/"
+
+    response = session.get(url=url, headers=headers, verify=CA_CERT_PATH)
+    response.raise_for_status()
+
+    data = response.json()
+
+    labs = data.get("data", {}).get("labs", [])
+
+
+    for lab in labs:
+        # EVE-NG stores labs as .unl files
+        existing_lab = lab.get("file", "").replace(".unl", "")
+
+        if existing_lab == lab_name:
+            return True
+
+    return False
 
 def create_router():
     create_url = 'https://evepro.interligo.local/api/labs/Labs/Lab1.unl/nodes'
@@ -254,6 +325,9 @@ def upload_config(port_number, node_name):
             time.sleep(1)
     print("Done.")
 # End function declarations
+login()
+create_folder("Labs")
+create_lab("Lab1", "Labs")
 
 create_router()
 create_switch()
