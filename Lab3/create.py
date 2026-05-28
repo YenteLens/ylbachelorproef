@@ -144,9 +144,9 @@ def lab_check(lab_name, folder_name):
 def create_nxos():
     url = 'https://evepro.interligo.local/api/labs/Labs/Lab3.unl/nodes'
     base_data = {"image": "nxosv9k-9300v-10.4.2.F", "name": "NXOS", "icon": "Switch-3D-L3-S.svg", "cpulimit": 0,
-                 "cpu": 2, "ram": 8192, "ethernet": 9, "qemu_version": "4.1.0", "qemu_arch": "x86_64",
+                 "cpu": 4, "ram": 8192, "ethernet": 9, "qemu_version": "4.1.0", "qemu_arch": "x86_64",
                  "qemu_options": "-machine type=pc,accel=kvm -serial mon:stdio -nographic -enable-kvm -cpu host",
-                 "config": "0", "sat": "-1", "delay": 0, "console": "telnet", "left": 600, "top": 500, "count": 1,
+                 "config": "0", "sat": "3", "delay": 0, "console": "telnet", "left": 600, "top": 500, "count": 1,
                  "template": "nxosv9k", "type": "qemu", "postfix": 0}
 
     for i in range(2):
@@ -424,6 +424,7 @@ def upload_config(port_number, node_name):
 def disable_poap(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
     tn.write(b"yes\n")
+    time.sleep(5)
 
 def nxos_init(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
@@ -488,8 +489,8 @@ for switch in nxos:
     tn_port = get_port(nxos[switch])
     disable_poap(tn_port)
 
-print("Sleeping for 10 minutes...")
-time.sleep(600)
+print("Sleeping for 5 minutes...")
+time.sleep(300)
 print("Done")
 
 for device in all_devices:
