@@ -1,3 +1,4 @@
 set pcname HR
 ip 172.16.40.10/24 172.16.40.1
 ip dns 8.8.8.8
+set pcname HR
