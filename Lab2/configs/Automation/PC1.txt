@@ -1,3 +1,4 @@
 set pcname PC1
 ip 192.168.1.100/25 192.168.1.15
 ip dns 8.8.8.8
+set pcname PC1
