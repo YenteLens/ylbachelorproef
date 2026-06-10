@@ -84,5 +84,6 @@ policy-map global_policy
 exit
 
 service-policy global_policy global
+end
 
 write memory

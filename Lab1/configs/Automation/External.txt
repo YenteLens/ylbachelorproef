@@ -2,3 +2,4 @@ set pcname External
 ip 172.16.50.10/24 172.16.50.1
 ip dns 8.8.8.8
 set pcname External
+save
