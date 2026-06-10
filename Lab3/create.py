@@ -423,7 +423,12 @@ def upload_config(port_number, node_name):
 
 def disable_poap(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
-    tn.write(b"yes\n")
+
+    for i in range (3):
+        tn.write(b"\r\n")
+
+    tn.write(b"yes\r\n")
+
     time.sleep(5)
 
 def nxos_init(port_number):
