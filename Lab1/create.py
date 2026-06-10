@@ -2,7 +2,7 @@ import time
 import requests
 import json
 
-from paramiko.auth_handler import GssapiWithMicAuthHandler
+#from paramiko.auth_handler import GssapiWithMicAuthHandler
 from telnetlib3 import Telnet
 import urllib3
 
@@ -311,6 +311,7 @@ def telnet_init(port_number):
     tn.write(b"no\n")
 
     tn.write(b"\r\n")
+    tn.read_until(b">", timeout=120)
 
 def upload_config(port_number, node_name, node_id):
     login()
@@ -324,7 +325,7 @@ def upload_config(port_number, node_name, node_id):
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
     print("Done.")
-    time.sleep(5)
+    tn.read_until(b"#", timeout=120)
     login()
     export_config(node_id)
 

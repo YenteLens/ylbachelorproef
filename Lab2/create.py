@@ -2,7 +2,7 @@ import time
 import requests
 import json
 
-from paramiko.auth_handler import GssapiWithMicAuthHandler
+#from paramiko.auth_handler import GssapiWithMicAuthHandler
 from telnetlib3 import Telnet
 import urllib3
 
@@ -310,8 +310,9 @@ def telnet_init(port_number):
     tn.write(b"no\n")
 
     tn.write(b"\r\n")
+    tn.read_until(b">", timeout=120)
 
-def upload_config(port_number, node_name):
+def upload_config(port_number, node_name, node_id):
     login()
 
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
@@ -323,6 +324,42 @@ def upload_config(port_number, node_name):
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
     print("Done.")
+    tn.read_until(b"#", timeout=120)
+    login()
+    export_config(node_id)
+
+def upload_vpc_conf(port_number, node_name, node_id):
+    login()
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+
+    time.sleep(2)
+
+    with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip()
+
+            print(f"SENDING: {cmd}")
+            tn.write(cmd.encode() + b"\r")
+            tn.read_until(b">", timeout=10)
+
+    print("Done.")
+    tn.read_until(b">", timeout=120)
+    login()
+    export_config(node_id)
+
+def export_config(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs//Lab2.unl/nodes/{node_id}/export"
+
+    response = session.put(url=url, verify=CA_CERT_PATH)
+    print(f"Config of node {node_id} exported.")
+    print(response.json())
+
+def enable_startup(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs//Lab2.unl/nodes/{node_id}"
+    data = {"config":"1"}
+
+    response = session.put(url=url, json=data, verify=CA_CERT_PATH)
+    print(f"Node {node_id} startup config enabled.")
 
 # End function definitions
 
@@ -360,10 +397,24 @@ print("Waiting 165 seconds to let all devices boot.")
 time.sleep(165)
 print("Sleep finished.")
 
+for r in routers:
+    tn_port = get_port(routers[r])
+    telnet_init(tn_port)
+    upload_config(tn_port, r, routers[r])
+
+for s in switches:
+    tn_port = get_port(switches[s])
+    telnet_init(tn_port)
+    upload_config(tn_port, s, switches[s])
+
+for f in firewalls:
+    tn_port = get_port(firewalls[f])
+    telnet_init(tn_port)
+    upload_config(tn_port, f, firewalls[f])
+
+for v in vpcs:
+    tn_port = get_port(vpcs[v])
+    upload_vpc_conf(tn_port, v, vpcs[v])
+
 for device in all_devices:
-    tn_port = get_port(all_devices[device])
-    if device != "ASA":
-        telnet_init(tn_port)
-        upload_config(tn_port,device)
-    else:
-        upload_config(tn_port,device)
+    enable_startup(all_devices[device])
