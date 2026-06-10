@@ -394,8 +394,9 @@ def telnet_init(port_number):
     tn.write(b"no\n")
 
     tn.write(b"\r\n")
+    tn.read_until(b">", timeout=120)
 
-def upload_config(port_number, node_name):
+def upload_config(port_number, node_name, node_id):
     login()
 
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
@@ -420,6 +421,9 @@ def upload_config(port_number, node_name):
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
     print("Done.")
+    tn.read_until(b"#", timeout=120)
+    login()
+    export_config(node_id)
 
 def disable_poap(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
@@ -448,6 +452,39 @@ def nxos_init(port_number):
     tn.write(b"no\r\n")
 
     time.sleep(10)
+
+def export_config(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs//Lab3.unl/nodes/{node_id}/export"
+
+    response = session.put(url=url, verify=CA_CERT_PATH)
+    print(f"Config of node {node_id} exported.")
+    print(response.json())
+
+def enable_startup(node_id):
+    url = f"https://evepro.interligo.local/api/labs/Labs//Lab3.unl/nodes/{node_id}"
+    data = {"config":"1"}
+
+    response = session.put(url=url, json=data, verify=CA_CERT_PATH)
+    print(f"Node {node_id} startup config enabled.")
+
+def upload_vpc_conf(port_number, node_name, node_id):
+    login()
+    tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
+
+    time.sleep(2)
+
+    with open(f"./configs/Automation/{node_name}.txt", 'r') as cmd_file:
+        for cmd in cmd_file.readlines():
+            cmd = cmd.strip()
+
+            print(f"SENDING: {cmd}")
+            tn.write(cmd.encode() + b"\r")
+            tn.read_until(b">", timeout=10)
+
+    print("Done.")
+    tn.read_until(b">", timeout=120)
+    login()
+    export_config(node_id)
 # End functions
 
 login()
@@ -498,23 +535,51 @@ print("Sleeping for 5 minutes...")
 time.sleep(300)
 print("Done")
 
+for n in nxos:
+    tn_port = get_port(all_devices[n])
+    nxos_init(tn_port)
+    upload_config(tn_port,n,nxos[n])
+
+for r in routers:
+    tn_port = get_port(routers[r])
+    telnet_init(tn_port)
+    upload_config(tn_port, r, routers[r])
+
+for s in switches:
+    tn_port = get_port(switches[s])
+    telnet_init(tn_port)
+    upload_config(tn_port, s, switches[s])
+
+for f in firewalls:
+    tn_port = get_port(firewalls[f])
+    telnet_init(tn_port)
+    upload_config(tn_port, f, firewalls[f])
+
+for v in vpcs:
+    tn_port = get_port(vpcs[v])
+    upload_vpc_conf(tn_port, v, vpcs[v])
+
 for device in all_devices:
-    match device:
-        case "Core-RT-B":
-            tn_port = get_port(all_devices[device])
-            nxos_init(tn_port)
-            upload_config(tn_port,device)
-        case "Core-RT-C":
-            tn_port = get_port(all_devices[device])
-            nxos_init(tn_port)
-            upload_config(tn_port, device)
-        case _:
-            tn_port = get_port(all_devices[device])
-            telnet_init(tn_port)
-            upload_config(tn_port, device)
+    enable_startup(all_devices[device])
+
+# for device in all_devices:
+#     match device:
+#         case "Core-RT-B":
+#             tn_port = get_port(all_devices[device])
+#             nxos_init(tn_port)
+#             upload_config(tn_port,device,all_devices[device])
+#         case "Core-RT-C":
+#             tn_port = get_port(all_devices[device])
+#             nxos_init(tn_port)
+#             upload_config(tn_port, device,all_devices[device])
+#         case _:
+#             tn_port = get_port(all_devices[device])
+#             telnet_init(tn_port)
+#             upload_config(tn_port, device,all_devices[device])
+
+for device in all_devices:
+    enable_startup(all_devices[device])
 
 
-
-
-connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
+#connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
 connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])
