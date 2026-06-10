@@ -8,6 +8,7 @@ spanning-tree loopguard default
 spanning-tree extend system-id
 
 interface GigabitEthernet0/0
+ channel-group 1 mode auto
  no shutdown
 exit
 
@@ -16,6 +17,7 @@ interface GigabitEthernet0/1
 exit
 
 interface GigabitEthernet0/2
+ spanning-tree cost 2000000
  no shutdown
 exit
 
@@ -27,6 +29,7 @@ interface GigabitEthernet0/3
 exit
 
 interface GigabitEthernet1/0
+ channel-group 1 mode auto
  no shutdown
 exit
 

@@ -67,8 +67,8 @@ crypto map VPN-MAP interface outside
 tunnel-group 10.199.199.30 type ipsec-l2l
 
 tunnel-group 10.199.199.30 ipsec-attributes
- ikev2 remote-authentication pre-shared-key cisco123
- ikev2 local-authentication pre-shared-key cisco123
+ ikev2 remote-authentication pre-shared-key cisco124
+ ikev2 local-authentication pre-shared-key cisco124
 exit
 
 write memory

@@ -5,10 +5,10 @@ hostname SW1
 
 spanning-tree mode rapid-pvst
 spanning-tree extend system-id
-spanning-tree vlan 1 priority 24576
 
 interface GigabitEthernet0/0
  spanning-tree guard root
+ channel-group 1 mode active
  no shutdown
 exit
 
@@ -30,6 +30,7 @@ interface GigabitEthernet0/3
 exit
 
 interface GigabitEthernet1/0
+ channel-group 1 mode active
  no shutdown
 exit
 

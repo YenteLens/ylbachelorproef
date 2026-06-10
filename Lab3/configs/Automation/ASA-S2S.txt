@@ -56,7 +56,7 @@ exit
 crypto ikev2 enable outside
 
 crypto map VPN-MAP 10 match address VPN-ACL
-crypto map VPN-MAP 10 set peer 10.199.199.40
+crypto map VPN-MAP 10 set peer 10.199.199.41
 crypto map VPN-MAP 10 set ikev2 ipsec-proposal IPSEC-PROP
 crypto map VPN-MAP interface outside
 

@@ -12,10 +12,12 @@ interface GigabitEthernet0/0
 exit
 
 interface GigabitEthernet0/1
+ channel-group 1 mode desirable
  no shutdown
 exit
 
 interface GigabitEthernet0/2
+ spanning-tree guard root
  no shutdown
 exit
 
@@ -27,6 +29,7 @@ interface GigabitEthernet0/3
 exit
 
 interface GigabitEthernet1/0
+ channel-group 1 mode desirable
  no shutdown
 exit
 
