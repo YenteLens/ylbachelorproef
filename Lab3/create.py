@@ -421,9 +421,14 @@ def upload_config(port_number, node_name, node_id):
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
     print("Done.")
-    tn.read_until(b"#", timeout=120)
-    login()
-    export_config(node_id)
+    tn.read_until(b"#", timeout=180)
+
+    if node_name == "Core-RT-B" or node_name == "Core-RT-C":
+        time.sleep(60)
+        pass
+    else:
+        login()
+        export_config(node_id)
 
 def disable_poap(port_number):
     tn = Telnet(host='evepro.interligo.local', port=port_number, timeout=10)
@@ -531,14 +536,16 @@ for switch in nxos:
     tn_port = get_port(nxos[switch])
     disable_poap(tn_port)
 
-print("Sleeping for 5 minutes...")
-time.sleep(300)
+print("Sleeping for 2 minutes...")
+time.sleep(120)
 print("Done")
 
 for n in nxos:
     tn_port = get_port(all_devices[n])
     nxos_init(tn_port)
     upload_config(tn_port,n,nxos[n])
+    login()
+    export_config(nxos[n])
 
 for r in routers:
     tn_port = get_port(routers[r])
