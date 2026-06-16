@@ -56,7 +56,7 @@ def login():
     )
     # checks for errors in HTTP response, if it finds one execution is stopped
     response.raise_for_status()
-    print("Logged in")
+    #print("Logged in")
 
 def create_folder(folder_name):
     if folder_check(folder_name):
@@ -323,7 +323,7 @@ def upload_config(port_number, node_name, node_id):
             cmd = cmd.strip('\r\n')
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
-    print("Done.")
+    print("Config Uploaded.")
     tn.read_until(b"#", timeout=120)
     login()
     export_config(node_id)
@@ -342,7 +342,7 @@ def upload_vpc_conf(port_number, node_name, node_id):
             tn.write(cmd.encode() + b"\r")
             tn.read_until(b">", timeout=10)
 
-    print("Done.")
+    print("Config Uploaded.")
     tn.read_until(b">", timeout=120)
     login()
     export_config(node_id)
@@ -352,7 +352,7 @@ def export_config(node_id):
 
     response = session.put(url=url, verify=CA_CERT_PATH)
     print(f"Config of node {node_id} exported.")
-    print(response.json())
+    #print(response.json())
 
 def enable_startup(node_id):
     url = f"https://evepro.interligo.local/api/labs/Labs//Lab2.unl/nodes/{node_id}"
@@ -387,6 +387,7 @@ for device1, int1, device2, int2 in links:
     connect_interfaces(all_devices[device2], int2, network_id)
     hide_networks(network_id)
     print(f"{device1}:{int1} <--> {device2}:{int2}")
+
 #connect firewall to internet separately
 connect_interfaces(firewalls["ASA"],4,cloud["Internet"])
 

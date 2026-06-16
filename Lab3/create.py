@@ -67,7 +67,7 @@ def login():
     )
     # checks for errors in HTTP response, if it finds one execution is stopped
     response.raise_for_status()
-    print("Logged in")
+    #print("Logged in")
 
 def create_folder(folder_name):
     if folder_check(folder_name):
@@ -420,7 +420,7 @@ def upload_config(port_number, node_name, node_id):
             cmd = cmd.strip('\r\n')
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
-    print("Done.")
+    print("Config uploaded.")
     tn.read_until(b"#", timeout=180)
 
     if node_name == "Core-RT-B" or node_name == "Core-RT-C":
@@ -486,7 +486,7 @@ def upload_vpc_conf(port_number, node_name, node_id):
             tn.write(cmd.encode() + b"\r")
             tn.read_until(b">", timeout=10)
 
-    print("Done.")
+    print("Config uploaded.")
     tn.read_until(b">", timeout=120)
     login()
     export_config(node_id)
@@ -530,13 +530,13 @@ print("Letting devices boot, 600 seconds...")
 time.sleep(300)
 print("5 minutes have passed")
 time.sleep(300)
-print("Done")
+print("Sleep Done")
 
 for switch in nxos:
     tn_port = get_port(nxos[switch])
     disable_poap(tn_port)
 
-print("Sleeping for 2 minutes...")
+print("Sleeping until POAP is disabled")
 time.sleep(120)
 print("Done")
 
@@ -569,24 +569,10 @@ for v in vpcs:
 for device in all_devices:
     enable_startup(all_devices[device])
 
-# for device in all_devices:
-#     match device:
-#         case "Core-RT-B":
-#             tn_port = get_port(all_devices[device])
-#             nxos_init(tn_port)
-#             upload_config(tn_port,device,all_devices[device])
-#         case "Core-RT-C":
-#             tn_port = get_port(all_devices[device])
-#             nxos_init(tn_port)
-#             upload_config(tn_port, device,all_devices[device])
-#         case _:
-#             tn_port = get_port(all_devices[device])
-#             telnet_init(tn_port)
-#             upload_config(tn_port, device,all_devices[device])
 
 for device in all_devices:
     enable_startup(all_devices[device])
 
 
-#connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
+connect_interfaces(switches["WAN-SW"],2,cloud["Internet"])
 connect_interfaces(firewalls["Remote-ASA"],1,cloud["Internet"])

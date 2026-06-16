@@ -2,7 +2,6 @@ import time
 import requests
 import json
 
-#from paramiko.auth_handler import GssapiWithMicAuthHandler
 from telnetlib3 import Telnet
 import urllib3
 
@@ -52,7 +51,7 @@ def login():
     )
     # checks for errors in HTTP response, if it finds one execution is stopped
     response.raise_for_status()
-    print("Logged in")
+    #print("Logged in")
 
 def create_folder(folder_name):
     if folder_check(folder_name):
@@ -276,7 +275,7 @@ def connect_interfaces(node_id,interface_id,network_id):
     }
 
     response = session.put(url=url, json=data, verify=CA_CERT_PATH)
-    print(response.json())
+    #print(response.json())
 
 def hide_networks(network_id):
     hide_data = {"visibility": 0}
@@ -324,7 +323,7 @@ def upload_config(port_number, node_name, node_id):
             cmd = cmd.strip('\r\n')
             tn.write(cmd.encode()+  b'\r')
             time.sleep(1)
-    print("Done.")
+    print("Config Uploaded.")
     tn.read_until(b"#", timeout=120)
     login()
     export_config(node_id)
@@ -339,11 +338,10 @@ def upload_vpc_conf(port_number, node_name, node_id):
         for cmd in cmd_file.readlines():
             cmd = cmd.strip()
 
-            print(f"SENDING: {cmd}")
             tn.write(cmd.encode() + b"\r")
             tn.read_until(b">", timeout=10)
 
-    print("Done.")
+    print("Config Uploaded.")
     time.sleep(5)
     login()
     export_config(node_id)
@@ -353,7 +351,7 @@ def export_config(node_id):
 
     response = session.put(url=url, verify=CA_CERT_PATH)
     print(f"Config of node {node_id} exported.")
-    print(response.json())
+    #print(response.json())
 
 def enable_startup(node_id):
     url = f"https://evepro.interligo.local/api/labs/Labs//Lab1.unl/nodes/{node_id}"
@@ -385,7 +383,9 @@ for device1, int1, device2, int2 in links:
 
     connect_interfaces(all_devices[device1], int1, network_id)
     connect_interfaces(all_devices[device2], int2, network_id)
+    print(f"{device1}:{int1} <--> {device2}:{int2}")
     hide_networks(network_id)
+
 #connect firewall to internet separately
 connect_interfaces(firewalls["ASA"],3,cloud["Internet"])
 
